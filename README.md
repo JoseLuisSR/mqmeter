@@ -28,4 +28,28 @@ class name. The following properties are required.
 * **mq_message**: The content of the message that you want.
 
 
+![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/JavaRequestSampler.png)
 
+
+## IBM WebSphere MQ
+
+The below images show where find the values for some of the above properties
+
+* **MQ Manager**
+
+![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQManager.png)
+
+* **MQ Server channel**
+
+![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQServerChanel.png)
+
+* **MQ Server listener**
+
+![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQServerListener.png)
+
+* **MQ Chlauth**
+
+You can find the steps to add users access to MQ Manager through Channel Authentication (Chlauth) with this tutorial 
+[IBM CHLAUTH](http://www-01.ibm.com/support/docview.wss?uid=swg27041997&aid=1)
+
+![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQChlauth.png)
