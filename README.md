@@ -20,7 +20,8 @@ After installing `mqmeter`, add a Java Request Sampler and select the `MQClientS
 class name. The following properties are required.
 
 * **mq_manager**: MQ Maneger name. You can find it through IBM WebSphere MQ Explore or console.
-* **mq_queue**: MQ Queue name. Could be Local or Remote queue.
+* **mq_queue_rqst**: MQ Queue request name to put message. Could be Local or Remote queue.
+* **mq_queue_rsps**: MQ Queue response name to get message. Could be Local or Remote queue.
 * **mq_hostname**: Host name or ip address where MQ Server is running.
 * **mq_port**: Port number of the MQ Server listener.
 * **mq_channel**: The Server channel name on MQ Server.
