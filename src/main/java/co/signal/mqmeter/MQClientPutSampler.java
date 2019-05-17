@@ -3,10 +3,8 @@ package co.signal.mqmeter;
 import com.ibm.mq.MQEnvironment;
 import com.ibm.mq.MQMessage;
 import com.ibm.mq.MQQueue;
-import com.ibm.mq.MQMsg2;
 import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.MQPutMessageOptions;
-import com.ibm.mq.MQGetMessageOptions;
 import com.ibm.mq.constants.MQConstants;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
@@ -17,7 +15,7 @@ import org.apache.log.Logger;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-public class MQClientSampler extends AbstractJavaSamplerClient {
+public class MQClientPutSampler extends AbstractJavaSamplerClient {
 
 
     private static final Logger log = LoggingManager.getLoggerForClass();
@@ -31,11 +29,6 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      * Parameter for setting MQ QUEUE to put message, could be LOCAL or REMOTE.
      */
     private static final String PARAMETER_MQ_QUEUE_RQST = "mq_queue_rqst";
-
-    /**
-     * Parameter for setting MQ QUEUE for get response message, could be LOCAL or REMOTE.
-     */
-    private static final String PARAMETER_MQ_QUEUE_RSPS = "mq_queue_rsps";
 
     /**
      * Parameter for setting MQ Hostname where MQ Server is deploying.
@@ -85,7 +78,6 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         Arguments defaultParameter = new Arguments();
         defaultParameter.addArgument(PARAMETER_MQ_MANAGER, "${MQ_MANAGER}");
         defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RQST, "${MQ_QUEUE_RQST}");
-        defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RSPS, "${MQ_QUEUE_RSPS}");
         defaultParameter.addArgument(PARAMETER_MQ_HOSTNAME, "${MQ_HOSTNAME}");
         defaultParameter.addArgument(PARAMETER_MQ_PORT, "${MQ_PORT}");
         defaultParameter.addArgument(PARAMETER_MQ_CHANNEL, "${MQ_CHANNEL}");
@@ -146,13 +138,11 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
 
         SampleResult result = newSampleResult();
         String message = context.getParameter(PARAMETER_MQ_MESSAGE);
-        String response;
         sampleResultStart(result, message);
 
         try{
             putMQMessage(context, message);
-            response = getMQMessage(context);
-            sampleResultSuccess(result, response);
+            sampleResultSuccess(result, "");
         }catch (Exception e){
             sampleResultFail(result, "500", e);
             log.info("runTest" + e.getMessage());
@@ -180,27 +170,6 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         mqQueue.put(mqMessage, new MQPutMessageOptions());
         log.info("Closing the queue");
         mqQueue.close();
-    }
-
-    /**
-     * Method to open mq queue, get message and close mq queue.
-     * @param context to get the arguments values on Java Sampler.
-     * @return String, message on mq queue.
-     * @throws Exception
-     */
-    private String getMQMessage(JavaSamplerContext context) throws Exception{
-        String mq_Queue = context.getParameter(PARAMETER_MQ_QUEUE_RSPS);
-        String encodingMsg = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
-        MQMsg2 mqMsg2 = new MQMsg2();
-        MQQueue mqQueue;
-
-        log.info("Accessing queue: " + mq_Queue);
-        mqQueue = mqMgr.accessQueue(mq_Queue, MQConstants.MQOO_INPUT_AS_Q_DEF);
-        log.info("Getting a message...");
-        mqQueue.getMsg2(mqMsg2,new MQGetMessageOptions());
-        log.info("Closing the queue");
-        mqQueue.close();
-        return new String(mqMsg2.getMessageData(),encodingMsg);
     }
 
     /**
