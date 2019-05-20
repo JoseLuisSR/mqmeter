@@ -15,9 +15,9 @@
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Controlador Bucle" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">1</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.num_threads">10</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <longProp name="ThreadGroup.start_time">1547420951000</longProp>
         <longProp name="ThreadGroup.end_time">1547420951000</longProp>
@@ -41,7 +41,7 @@
               </elementProp>
               <elementProp name="mq_queue_rsps" elementType="Argument">
                 <stringProp name="Argument.name">mq_queue_rsps</stringProp>
-                <stringProp name="Argument.value">QLOCAL02</stringProp>
+                <stringProp name="Argument.value">QLOCAL01</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="mq_hostname" elementType="Argument">
@@ -62,6 +62,11 @@
               <elementProp name="mq_user_id" elementType="Argument">
                 <stringProp name="Argument.name">mq_user_id</stringProp>
                 <stringProp name="Argument.value">JoseSR</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_encoding_message" elementType="Argument">
+                <stringProp name="Argument.name">mq_encoding_message</stringProp>
+                <stringProp name="Argument.value">Cp1047</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="mq_message" elementType="Argument">
