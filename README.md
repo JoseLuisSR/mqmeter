@@ -16,42 +16,20 @@ Install the extension `mqmeter-x.y.z.jar` into
 
 ## Usage
 
-After installing `mqmeter`, you can choose two Java Request Sampler, these are:
-
-### MQClientSampler
-
-Use it to PUT and GET message on queue. Add a Java Request Sampler and select the `MQClientSampler` class name.
-The following properties are required.
+After installing `mqmeter`, add a Java Request Sampler and select the `MQClientSampler` class name. The following properties are required.
 
 * **mq_manager**: MQ Manager name. You can find it through IBM WebSphere MQ Explore or console.
 * **mq_queue_rqst**: MQ Queue request name to put message. Could be Local or Remote queue.
-* **mq_queue_rsps**: MQ Queue response name to get message. Could be Local or Remote queue.
+* **mq_queue_rsps**: MQ Queue response name to get message. Could be Local or Remote queue. Leave it empty if you don't want get response message.
 * **mq_hostname**: Host name or ip address where MQ Server is running.
 * **mq_port**: Port number of the MQ Server listener.
 * **mq_channel**: The Server channel name on MQ Server.
-* **mq_user_id**: The userID with rights to connect and add message on queue.
+* **mq_user_id**: The userID with rights to connect and add message on queue. Leave it empty if you don't need user id to connect to MQ.
+* **mq_user_password**: The user password to connect to MQ server channel. Leave it empty if you don't need user id and password to connect to MQ.
 * **mq_encoding_message**: Character encoding standard for your message: For EBCDIC put Cp1047. ASCII just put ASCII.
 * **mq_message**: The content of the message that you want.
 
 ![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQClientSampler.png)
-
-### MQClientPutSampler
-
-This is to only PUT message on queue without get the response. Add a Java Request Sampler and select the
-`MQClientPutSampler` class name. The following properties are required.
-
-* **mq_manager**: MQ Manager name. You can find it through IBM WebSphere MQ Explore or console.
-* **mq_queue_rqst**: MQ Queue request name to put message. Could be Local or Remote queue.
-* **mq_hostname**: Host name or ip address where MQ Server is running.
-* **mq_port**: Port number of the MQ Server listener.
-* **mq_channel**: The Server channel name on MQ Server.
-* **mq_user_id**: The userID with rights to connect and add message on queue.
-* **mq_encoding_message**: You can choose the character encoding standard for your message: For EBCDIC put Cp1047. ASCII just put ASCII.
-* **mq_message**: The content of the message that you want.
-
-
-![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQClientPutSampler.png)
-
 
 ## IBM WebSphere MQ
 
