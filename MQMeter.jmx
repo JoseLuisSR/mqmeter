@@ -15,9 +15,9 @@
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Controlador Bucle" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <intProp name="LoopController.loops">-1</intProp>
+          <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">10</stringProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <longProp name="ThreadGroup.start_time">1547420951000</longProp>
         <longProp name="ThreadGroup.end_time">1547420951000</longProp>
@@ -26,7 +26,7 @@
         <stringProp name="ThreadGroup.delay"></stringProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Petición Java" enabled="true">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Petición Java" enabled="false">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
             <collectionProp name="Arguments.arguments">
               <elementProp name="mq_manager" elementType="Argument">
@@ -77,6 +77,54 @@
             </collectionProp>
           </elementProp>
           <stringProp name="classname">co.signal.mqmeter.MQClientSampler</stringProp>
+        </JavaSampler>
+        <hashTree/>
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Petición Java" enabled="true">
+          <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="mq_manager" elementType="Argument">
+                <stringProp name="Argument.name">mq_manager</stringProp>
+                <stringProp name="Argument.value">IOTMQ</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_topic" elementType="Argument">
+                <stringProp name="Argument.name">mq_topic</stringProp>
+                <stringProp name="Argument.value">device</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_hostname" elementType="Argument">
+                <stringProp name="Argument.name">mq_hostname</stringProp>
+                <stringProp name="Argument.value">127.0.0.1</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_port" elementType="Argument">
+                <stringProp name="Argument.name">mq_port</stringProp>
+                <stringProp name="Argument.value">1414</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_channel" elementType="Argument">
+                <stringProp name="Argument.name">mq_channel</stringProp>
+                <stringProp name="Argument.value">CLIENT.TO.IOTMQ</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_user_id" elementType="Argument">
+                <stringProp name="Argument.name">mq_user_id</stringProp>
+                <stringProp name="Argument.value">JoseSR</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_encoding_message" elementType="Argument">
+                <stringProp name="Argument.name">mq_encoding_message</stringProp>
+                <stringProp name="Argument.value">ASCII</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_message" elementType="Argument">
+                <stringProp name="Argument.name">mq_message</stringProp>
+                <stringProp name="Argument.value">Jose Luis</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="classname">co.signal.mqmeter.MQPublishSampler</stringProp>
         </JavaSampler>
         <hashTree/>
         <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="Ver Árbol de Resultados" enabled="true">
