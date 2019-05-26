@@ -40,8 +40,6 @@ Use it to put and get message (optional) on MQ queue. On JMeter add a Java Reque
 MQ can manage topics also and you can publish and subscribe to it, use this class to publish message on MQ Topic.
 On JMeter add a Java Request Sampler and select the `MQPublishSampler` class name. The following parameters are necessary.
 
-Add a Java Request Sampler and select the `MQPublishSampler` class name. The following properties are required.
-
 * **mq_manager**: MQ Manager name. You can find it through IBM WebSphere MQ Explore or console.
 * **mq_topic**: MQ topic name to publish message.
 * **mq_hostname**: Host name or ip address where MQ Server is running.
@@ -52,9 +50,9 @@ Add a Java Request Sampler and select the `MQPublishSampler` class name. The fol
 * **mq_encoding_message**: Character encoding standard for your message: For EBCDIC put Cp1047. ASCII just put ASCII.
 * **mq_message**: The content of the message that you want.
 
-## IBM WebSphere MQ
-
 ![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQPublishSampler.png)
+
+## IBM WebSphere MQ
 
 The below images show where find the values for some of the above properties
 
