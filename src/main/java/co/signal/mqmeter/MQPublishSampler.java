@@ -41,6 +41,11 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
     private static final String PARAMETER_MQ_USER_ID = "mq_user_id";
 
     /**
+     * Parameter for setting MQ User password.
+     */
+    private static final String PARAMETER_MQ_USER_PASSWORD = "mq_user_password";
+
+    /**
      * Parameter for setting MQ PORT, is the Listener port.
      */
     private static final String PARAMETER_MQ_PORT = "mq_port";
@@ -60,8 +65,14 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
      */
     private static final String ENCODING = "UTF-8";
 
+    /**
+     * MQQueueManager variable.
+     */
     private MQQueueManager mqMgr;
 
+    /**
+     * MQTopic variable.
+     */
     private MQTopic publisher;
 
     /**
@@ -76,7 +87,8 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         defaultParameter.addArgument(PARAMETER_MQ_HOSTNAME, "${MQ_HOSTNAME}");
         defaultParameter.addArgument(PARAMETER_MQ_PORT, "${MQ_PORT}");
         defaultParameter.addArgument(PARAMETER_MQ_CHANNEL, "${MQ_CHANNEL}");
-        defaultParameter.addArgument(PARAMETER_MQ_USER_ID, "${MQ_USER_ID}");
+        defaultParameter.addArgument(PARAMETER_MQ_USER_ID, "");
+        defaultParameter.addArgument(PARAMETER_MQ_USER_PASSWORD, "");
         defaultParameter.addArgument(PARAMETER_MQ_ENCODING_MESSAGE, "${MQ_ENCODING_MESSAGE}");
         defaultParameter.addArgument(PARAMETER_MQ_MESSAGE, "${MQ_MESSAGE}");
         return defaultParameter;
@@ -93,10 +105,14 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         MQEnvironment.hostname = context.getParameter(PARAMETER_MQ_HOSTNAME);
         MQEnvironment.port = Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT));
         MQEnvironment.channel = context.getParameter(PARAMETER_MQ_CHANNEL);
-        MQEnvironment.userID = context.getParameter(PARAMETER_MQ_USER_ID);
-        log.info("MQ Environments variable are hostname: " + MQEnvironment.hostname + " port: " +
-                MQEnvironment.port + " channel: " + MQEnvironment.channel +
-                " userID: " + MQEnvironment.userID);
+        String userID = context.getParameter(PARAMETER_MQ_USER_ID);
+        if( userID != null && !userID.isEmpty())
+            MQEnvironment.userID = userID;
+        String password = context.getParameter(PARAMETER_MQ_USER_PASSWORD);
+        if( password != null && !password.isEmpty() )
+            MQEnvironment.password = password;
+        log.info("MQ environments are hostname: " + MQEnvironment.hostname + " port: " +
+                MQEnvironment.port + " channel: " + MQEnvironment.channel);
         String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
         String topicName = context.getParameter(PARAMETER_MQ_TOPIC);
         //Connect to MQ Manager.
