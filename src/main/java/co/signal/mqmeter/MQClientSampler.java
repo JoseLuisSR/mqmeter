@@ -113,7 +113,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         properties.put(MQConstants.HOST_NAME_PROPERTY, context.getParameter(PARAMETER_MQ_HOSTNAME));
         properties.put(MQConstants.PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
         properties.put(MQConstants.CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
-        properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, "true");
+        properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
         String userID = context.getParameter(PARAMETER_MQ_USER_ID);
         if( userID != null && !userID.isEmpty())
             properties.put(MQConstants.USER_ID_PROPERTY, userID);
