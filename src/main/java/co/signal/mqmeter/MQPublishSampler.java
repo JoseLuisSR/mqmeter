@@ -1,6 +1,10 @@
 package co.signal.mqmeter;
 
-import com.ibm.mq.*;
+
+import com.ibm.mq.MQMessage;
+import com.ibm.mq.MQPutMessageOptions;
+import com.ibm.mq.MQQueueManager;
+import com.ibm.mq.MQTopic;
 import com.ibm.mq.constants.MQConstants;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
@@ -10,6 +14,7 @@ import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Hashtable;
 
 public class MQPublishSampler extends AbstractJavaSamplerClient {
 
@@ -101,24 +106,26 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
     @Override
     public void setupTest(JavaSamplerContext context) {
 
-        //Set MQ Environments.
-        MQEnvironment.hostname = context.getParameter(PARAMETER_MQ_HOSTNAME);
-        MQEnvironment.port = Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT));
-        MQEnvironment.channel = context.getParameter(PARAMETER_MQ_CHANNEL);
+        // SET MQ Manager properties to connection.
+        Hashtable properties = new Hashtable<String, Object>();
+        properties.put(MQConstants.HOST_NAME_PROPERTY, context.getParameter(PARAMETER_MQ_HOSTNAME));
+        properties.put(MQConstants.PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
+        properties.put(MQConstants.CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
+        properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
         String userID = context.getParameter(PARAMETER_MQ_USER_ID);
         if( userID != null && !userID.isEmpty())
-            MQEnvironment.userID = userID;
+            properties.put(MQConstants.USER_ID_PROPERTY, userID);
         String password = context.getParameter(PARAMETER_MQ_USER_PASSWORD);
         if( password != null && !password.isEmpty() )
-            MQEnvironment.password = password;
-        log.info("MQ environments are hostname: " + MQEnvironment.hostname + " port: " +
-                MQEnvironment.port + " channel: " + MQEnvironment.channel);
+            properties.put(MQConstants.PASSWORD_PROPERTY, password);
+        log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
+                properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY));
         String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
         String topicName = context.getParameter(PARAMETER_MQ_TOPIC);
         //Connect to MQ Manager.
         try {
             log.info("Connecting to MQ Manager: " + mq_Manager);
-            mqMgr = new MQQueueManager(mq_Manager);
+            mqMgr = new MQQueueManager(mq_Manager, properties);
             log.info("Access topic: " + topicName);
             publisher = mqMgr.accessTopic(null,topicName, MQConstants.MQTOPIC_OPEN_AS_PUBLICATION, MQConstants.MQOO_OUTPUT);
         }catch (Exception e){
