@@ -1,11 +1,10 @@
 package co.signal.mqmeter;
 
+
 import com.ibm.mq.MQMessage;
-import com.ibm.mq.MQQueue;
-import com.ibm.mq.MQMsg2;
-import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.MQPutMessageOptions;
-import com.ibm.mq.MQGetMessageOptions;
+import com.ibm.mq.MQQueueManager;
+import com.ibm.mq.MQTopic;
 import com.ibm.mq.constants.MQConstants;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
@@ -17,8 +16,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Hashtable;
 
-public class MQClientSampler extends AbstractJavaSamplerClient {
-
+public class MQPublishSampler extends AbstractJavaSamplerClient {
 
     private static final Logger log = LoggingManager.getLoggerForClass();
 
@@ -28,14 +26,9 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private static final String PARAMETER_MQ_MANAGER = "mq_manager";
 
     /**
-     * Parameter for setting MQ QUEUE to put message, could be LOCAL or REMOTE.
+     * Parameter for setting the topic name.
      */
-    private static final String PARAMETER_MQ_QUEUE_RQST = "mq_queue_rqst";
-
-    /**
-     * Parameter for setting MQ QUEUE for get response message, could be LOCAL or REMOTE.
-     */
-    private static final String PARAMETER_MQ_QUEUE_RSPS = "mq_queue_rsps";
+    private static final String PARAMETER_MQ_TOPIC = "mq_topic";
 
     /**
      * Parameter for setting MQ Hostname where MQ Server is deploying.
@@ -72,14 +65,20 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      */
     private static final String PARAMETER_MQ_ENCODING_MESSAGE = "mq_encoding_message";
 
-
     /**
      * Parameter for encoding.
      */
     private static final String ENCODING = "UTF-8";
 
+    /**
+     * MQQueueManager variable.
+     */
     private MQQueueManager mqMgr;
 
+    /**
+     * MQTopic variable.
+     */
+    private MQTopic publisher;
 
     /**
      * Initial values for test parameter. They are show in Java Request test sampler.
@@ -89,13 +88,12 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     public Arguments getDefaultParameters() {
         Arguments defaultParameter = new Arguments();
         defaultParameter.addArgument(PARAMETER_MQ_MANAGER, "${MQ_MANAGER}");
-        defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RQST, "${MQ_QUEUE_RQST}");
-        defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RSPS, "");
+        defaultParameter.addArgument(PARAMETER_MQ_TOPIC,"${MQ_TOPIC}");
         defaultParameter.addArgument(PARAMETER_MQ_HOSTNAME, "${MQ_HOSTNAME}");
         defaultParameter.addArgument(PARAMETER_MQ_PORT, "${MQ_PORT}");
         defaultParameter.addArgument(PARAMETER_MQ_CHANNEL, "${MQ_CHANNEL}");
         defaultParameter.addArgument(PARAMETER_MQ_USER_ID, "");
-        defaultParameter.addArgument(PARAMETER_MQ_USER_PASSWORD,"");
+        defaultParameter.addArgument(PARAMETER_MQ_USER_PASSWORD, "");
         defaultParameter.addArgument(PARAMETER_MQ_ENCODING_MESSAGE, "${MQ_ENCODING_MESSAGE}");
         defaultParameter.addArgument(PARAMETER_MQ_MESSAGE, "${MQ_MESSAGE}");
         return defaultParameter;
@@ -123,102 +121,53 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
                 properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY));
         String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
-
+        String topicName = context.getParameter(PARAMETER_MQ_TOPIC);
+        //Connect to MQ Manager.
         try {
-            log.info("Connecting to queue manager " + mq_Manager);
+            log.info("Connecting to MQ Manager: " + mq_Manager);
             mqMgr = new MQQueueManager(mq_Manager, properties);
+            log.info("Access topic: " + topicName);
+            publisher = mqMgr.accessTopic(null,topicName, MQConstants.MQTOPIC_OPEN_AS_PUBLICATION, MQConstants.MQOO_OUTPUT);
         }catch (Exception e){
-            log.info("setupTest" + e.getMessage());
+            log.info("setupTest " + e.getMessage() );
         }
     }
 
-    /**
-     * Close and disconnect MQ variables.
-     * @param context to get the arguments values on Java Sampler.
-     */
     @Override
     public void teardownTest(JavaSamplerContext context) {
-        try{
-            log.info("Disconnecting from the Queue Manager");
+        try {
+            log.info("Close the topic");
+            publisher.close();
+            log.info("Done!");
+            log.info("Disconnect MQ Manager");
             mqMgr.disconnect();
             log.info("Done!");
         }catch (Exception e){
-            log.info("teardownTest" + e.getMessage());
+            log.info("teardownTest " + e.getMessage());
         }
     }
 
-    /**
-     * Main method to execute the test on single thread.
-     * @param context to get the arguments values on Java Sampler.
-     * @return SampleResult, captures data such as whether the test was successful,
-     * the response code and message, any request or response data, and the test start/end times
-     */
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
-
         SampleResult result = newSampleResult();
+        String encodingMessage = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
         String message = context.getParameter(PARAMETER_MQ_MESSAGE);
-        String response;
+        String response = null;
+        MQMessage mqMessage = new MQMessage();
         sampleResultStart(result, message);
 
         try{
-            putMQMessage(context, message);
-            response = getMQMessage(context);
+            mqMessage.write(message.getBytes(encodingMessage));
+            log.info("Publishing..");
+            publisher.put(mqMessage, new MQPutMessageOptions());
+            log.info("Done!");
             sampleResultSuccess(result, response);
         }catch (Exception e){
             sampleResultFail(result, "500", e);
-            log.info("runTest" + e.getMessage());
+            log.info("runTest " + e.getMessage());
         }
+
         return result;
-    }
-
-
-    /**
-     * Method to open a mq queue, put message and close mq queue.
-     * @param context to get the arguments values on Java Sampler.
-     * @param message to put on mq queue.
-     * @throws Exception
-     */
-    private void putMQMessage(JavaSamplerContext context, String message) throws Exception{
-        String mq_Queue = context.getParameter(PARAMETER_MQ_QUEUE_RQST);
-        String encodingMsg = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
-        MQMessage mqMessage = new MQMessage();
-        MQQueue mqQueue;
-
-        log.info("Accessing queue: " + mq_Queue);
-        mqQueue = mqMgr.accessQueue(mq_Queue, MQConstants.MQOO_OUTPUT);
-        log.info("Sending a message...");
-        mqMessage.write(message.getBytes(encodingMsg));
-        mqQueue.put(mqMessage, new MQPutMessageOptions());
-        log.info("Closing the queue");
-        mqQueue.close();
-    }
-
-    /**
-     * Method to open mq queue, get message and close mq queue.
-     * @param context to get the arguments values on Java Sampler.
-     * @return String, message on mq queue.
-     * @throws Exception
-     */
-    private String getMQMessage(JavaSamplerContext context) throws Exception{
-        String mq_Queue = context.getParameter(PARAMETER_MQ_QUEUE_RSPS);
-        String response = null;
-
-        if( mq_Queue != null && !mq_Queue.isEmpty()){
-            String encodingMsg = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
-            MQMsg2 mqMsg2 = new MQMsg2();
-            MQQueue mqQueue;
-
-            log.info("Accessing queue: " + mq_Queue);
-            mqQueue = mqMgr.accessQueue(mq_Queue, MQConstants.MQOO_INPUT_AS_Q_DEF);
-            log.info("Getting a message...");
-            mqQueue.getMsg2(mqMsg2,new MQGetMessageOptions());
-            response = new String(mqMsg2.getMessageData(),encodingMsg);
-            log.info("Closing the queue");
-            mqQueue.close();
-        }
-
-        return response;
     }
 
     /**
@@ -288,5 +237,4 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         exception.printStackTrace(new PrintWriter(stringWriter));
         result.setResponseData(stringWriter.toString(), ENCODING);
     }
-
 }
