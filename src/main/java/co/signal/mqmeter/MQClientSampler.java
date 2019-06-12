@@ -38,6 +38,21 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private static final String PARAMETER_MQ_QUEUE_RSPS = "mq_queue_rsps";
 
     /**
+     * Parameter for setting correlate response message with request message.
+     */
+    private static final String PARAMETER_MQ_CORRELATE_RSPS_MSG = "mq_correlate_rsps_msg";
+
+    /**
+     * Constant to correlate response message with messageID.
+     */
+    private static final String MESSAGE_ID = "messageId";
+
+    /**
+     * Constant to correlate response message with correlationID.
+     */
+    private static final String CORRELATION_ID = "correlationId";
+
+    /**
      * Parameter for setting MQ Hostname where MQ Server is deploying.
      */
     private static final String PARAMETER_MQ_HOSTNAME = "mq_hostname";
@@ -91,6 +106,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         defaultParameter.addArgument(PARAMETER_MQ_MANAGER, "${MQ_MANAGER}");
         defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RQST, "${MQ_QUEUE_RQST}");
         defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RSPS, "");
+        defaultParameter.addArgument(PARAMETER_MQ_CORRELATE_RSPS_MSG, "");
         defaultParameter.addArgument(PARAMETER_MQ_HOSTNAME, "${MQ_HOSTNAME}");
         defaultParameter.addArgument(PARAMETER_MQ_PORT, "${MQ_PORT}");
         defaultParameter.addArgument(PARAMETER_MQ_CHANNEL, "${MQ_CHANNEL}");
@@ -159,11 +175,12 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         SampleResult result = newSampleResult();
         String message = context.getParameter(PARAMETER_MQ_MESSAGE);
         String response;
+        byte[] messageId;
         sampleResultStart(result, message);
 
         try{
-            putMQMessage(context, message);
-            response = getMQMessage(context);
+            messageId= putMQMessage(context, message);
+            response = getMQMessage(context, messageId);
             sampleResultSuccess(result, response);
         }catch (Exception e){
             sampleResultFail(result, "500", e);
@@ -177,9 +194,10 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      * Method to open a mq queue, put message and close mq queue.
      * @param context to get the arguments values on Java Sampler.
      * @param message to put on mq queue.
+     * @return messageId generate by MQ Manager.
      * @throws Exception
      */
-    private void putMQMessage(JavaSamplerContext context, String message) throws Exception{
+    private byte[] putMQMessage(JavaSamplerContext context, String message) throws Exception{
         String mq_Queue = context.getParameter(PARAMETER_MQ_QUEUE_RQST);
         String encodingMsg = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
         MQMessage mqMessage = new MQMessage();
@@ -192,25 +210,37 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         mqQueue.put(mqMessage, new MQPutMessageOptions());
         log.info("Closing the queue");
         mqQueue.close();
+        return mqMessage.messageId;
     }
 
     /**
      * Method to open mq queue, get message and close mq queue.
      * @param context to get the arguments values on Java Sampler.
+     * @param messageId to correlate response message with request message.
      * @return String, message on mq queue.
      * @throws Exception
      */
-    private String getMQMessage(JavaSamplerContext context) throws Exception{
+    private String getMQMessage(JavaSamplerContext context, byte[] messageId) throws Exception{
         String mq_Queue = context.getParameter(PARAMETER_MQ_QUEUE_RSPS);
         String response = null;
 
         if( mq_Queue != null && !mq_Queue.isEmpty()){
             String encodingMsg = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
+            String correlateRspMssg = context.getParameter(PARAMETER_MQ_CORRELATE_RSPS_MSG);
             MQMsg2 mqMsg2 = new MQMsg2();
             MQQueue mqQueue;
 
             log.info("Accessing queue: " + mq_Queue);
             mqQueue = mqMgr.accessQueue(mq_Queue, MQConstants.MQOO_INPUT_AS_Q_DEF);
+
+            // Set message id from request message to get response message
+            if(correlateRspMssg == null || correlateRspMssg.isEmpty())
+                mqMsg2.setMessageId(messageId);
+            else if(correlateRspMssg.equals(MESSAGE_ID))
+                mqMsg2.setMessageId(messageId);
+            else if(correlateRspMssg.equals(CORRELATION_ID))
+                mqMsg2.setCorrelationId(messageId);
+
             log.info("Getting a message...");
             mqQueue.getMsg2(mqMsg2,new MQGetMessageOptions());
             response = new String(mqMsg2.getMessageData(),encodingMsg);
