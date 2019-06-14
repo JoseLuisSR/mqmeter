@@ -7,6 +7,7 @@ import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.MQPutMessageOptions;
 import com.ibm.mq.MQGetMessageOptions;
 import com.ibm.mq.constants.MQConstants;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
@@ -87,6 +88,10 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      */
     private static final String PARAMETER_MQ_ENCODING_MESSAGE = "mq_encoding_message";
 
+    /**
+     * Parameter to set wait interval to get message on queue.
+     */
+    private static final String PARAMETER_MQ_WAIT_INTERVAL = "mq_wait_interval";
 
     /**
      * Parameter for encoding.
@@ -107,6 +112,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RQST, "${MQ_QUEUE_RQST}");
         defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RSPS, "");
         defaultParameter.addArgument(PARAMETER_MQ_CORRELATE_RSPS_MSG, "");
+        defaultParameter.addArgument(PARAMETER_MQ_WAIT_INTERVAL, "");
         defaultParameter.addArgument(PARAMETER_MQ_HOSTNAME, "${MQ_HOSTNAME}");
         defaultParameter.addArgument(PARAMETER_MQ_PORT, "${MQ_PORT}");
         defaultParameter.addArgument(PARAMETER_MQ_CHANNEL, "${MQ_CHANNEL}");
@@ -222,6 +228,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      */
     private String getMQMessage(JavaSamplerContext context, byte[] messageId) throws Exception{
         String mq_Queue = context.getParameter(PARAMETER_MQ_QUEUE_RSPS);
+        MQGetMessageOptions mqGMO = new MQGetMessageOptions();
         String response = null;
 
         if( mq_Queue != null && !mq_Queue.isEmpty()){
@@ -241,8 +248,15 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
             else if(correlateRspMssg.equals(CORRELATION_ID))
                 mqMsg2.setCorrelationId(messageId);
 
+            //Set wait Interval to get message on queue.
+            String waitInterval = context.getParameter(PARAMETER_MQ_WAIT_INTERVAL);
+            if(waitInterval != null && !waitInterval.isEmpty() && StringUtils.isNumeric(waitInterval)) {
+                mqGMO.options = MQConstants.MQGMO_WAIT;
+                mqGMO.waitInterval = Integer.parseInt(waitInterval);
+            }
+
             log.info("Getting a message...");
-            mqQueue.getMsg2(mqMsg2,new MQGetMessageOptions());
+            mqQueue.getMsg2(mqMsg2, mqGMO);
             response = new String(mqMsg2.getMessageData(),encodingMsg);
             log.info("Closing the queue");
             mqQueue.close();
