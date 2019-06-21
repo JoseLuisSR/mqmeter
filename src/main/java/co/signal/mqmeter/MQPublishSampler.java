@@ -1,10 +1,21 @@
+/*
+ * Copyright 2019 JoseLuisSR
+ *
+ *Licensed under the Apache License, Version 2.0 (the "License");
+ *you may not use this file except in compliance with the License.
+ *You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *Unless required by applicable law or agreed to in writing, software
+ *distributed under the License is distributed on an "AS IS" BASIS,
+ *WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *See the License for the specific language governing permissions and
+ *limitations under the License.
+ */
 package co.signal.mqmeter;
 
-
-import com.ibm.mq.MQMessage;
-import com.ibm.mq.MQPutMessageOptions;
-import com.ibm.mq.MQQueueManager;
-import com.ibm.mq.MQTopic;
+import com.ibm.mq.*;
 import com.ibm.mq.constants.MQConstants;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
@@ -16,6 +27,12 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Hashtable;
 
+/**
+ * This class is to put and get message on WebSphere MQ queue.
+ * @author JoseLuisSR
+ * @since 01/13/2019
+ * @see "https://github.com/JoseLuisSR/mqmeter"
+ */
 public class MQPublishSampler extends AbstractJavaSamplerClient {
 
     private static final Logger log = LoggingManager.getLoggerForClass();
@@ -81,6 +98,11 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
     private MQTopic publisher;
 
     /**
+     * Properties variable.
+     */
+    private Hashtable properties;
+
+    /**
      * Initial values for test parameter. They are show in Java Request test sampler.
      * @return Arguments to set as default.
      */
@@ -107,43 +129,39 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
     public void setupTest(JavaSamplerContext context) {
 
         // SET MQ Manager properties to connection.
-        Hashtable properties = new Hashtable<String, Object>();
+        properties = new Hashtable<String, Object>();
         properties.put(MQConstants.HOST_NAME_PROPERTY, context.getParameter(PARAMETER_MQ_HOSTNAME));
         properties.put(MQConstants.PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
         properties.put(MQConstants.CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
         properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
         String userID = context.getParameter(PARAMETER_MQ_USER_ID);
+
         if( userID != null && !userID.isEmpty())
             properties.put(MQConstants.USER_ID_PROPERTY, userID);
         String password = context.getParameter(PARAMETER_MQ_USER_PASSWORD);
         if( password != null && !password.isEmpty() )
             properties.put(MQConstants.PASSWORD_PROPERTY, password);
+
         log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
                 properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY));
-        String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
-        String topicName = context.getParameter(PARAMETER_MQ_TOPIC);
-        //Connect to MQ Manager.
-        try {
-            log.info("Connecting to MQ Manager: " + mq_Manager);
-            mqMgr = new MQQueueManager(mq_Manager, properties);
-            log.info("Access topic: " + topicName);
-            publisher = mqMgr.accessTopic(null,topicName, MQConstants.MQTOPIC_OPEN_AS_PUBLICATION, MQConstants.MQOO_OUTPUT);
-        }catch (Exception e){
-            log.info("setupTest " + e.getMessage() );
-        }
     }
 
     @Override
     public void teardownTest(JavaSamplerContext context) {
+
         try {
-            log.info("Close the topic");
-            publisher.close();
-            log.info("Done!");
-            log.info("Disconnect MQ Manager");
-            mqMgr.disconnect();
-            log.info("Done!");
+            if(publisher != null && publisher.isOpen()) {
+                log.info("Close the topic");
+                publisher.close();
+                log.info("Done!");
+            }
+            if(mqMgr != null && mqMgr.isConnected()) {
+                log.info("Disconnect MQ Manager");
+                mqMgr.disconnect();
+                log.info("Done!");
+            }
         }catch (Exception e){
-            log.info("teardownTest " + e.getMessage());
+            log.info("teardownTest " + e.getCause());
         }
     }
 
@@ -152,16 +170,28 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         SampleResult result = newSampleResult();
         String encodingMessage = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
         String message = context.getParameter(PARAMETER_MQ_MESSAGE);
+        String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
+        String topicName = context.getParameter(PARAMETER_MQ_TOPIC);
         String response = null;
         MQMessage mqMessage = new MQMessage();
         sampleResultStart(result, message);
 
         try{
+            //Connect to MQ Manager.
+            log.info("Connecting to MQ Manager: " + mq_Manager);
+            mqMgr = new MQQueueManager(mq_Manager, properties);
+            //Access topic.
+            log.info("Access topic: " + topicName);
+            publisher = mqMgr.accessTopic(null,topicName, MQConstants.MQTOPIC_OPEN_AS_PUBLICATION, MQConstants.MQOO_OUTPUT);
+            //Publish message on topic.
             mqMessage.write(message.getBytes(encodingMessage));
             log.info("Publishing..");
             publisher.put(mqMessage, new MQPutMessageOptions());
             log.info("Done!");
             sampleResultSuccess(result, response);
+        }catch (MQException e){
+            sampleResultFail(result, "500", e);
+            log.info("runTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
         }catch (Exception e){
             sampleResultFail(result, "500", e);
             log.info("runTest " + e.getMessage());
@@ -232,7 +262,13 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         result.sampleEnd();
         result.setSuccessful(false);
         result.setResponseCode(reason);
-        result.setResponseMessage("Exception: " + exception);
+        String responseMessage;
+
+        responseMessage = "Exception: " + exception.getMessage();
+        responseMessage += exception.getClass().equals(MQException.class) ? " MQ Reason Code: " + MQConstants.lookupReasonCode(((MQException)exception).getReason()) : "";
+        responseMessage += exception.getCause() != null ? " Cause: " + exception.getCause() : "";
+        result.setResponseMessage(responseMessage);
+
         StringWriter stringWriter = new StringWriter();
         exception.printStackTrace(new PrintWriter(stringWriter));
         result.setResponseData(stringWriter.toString(), ENCODING);
