@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.1.1 r1855137">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Plan de Pruebas" enabled="true">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="mqmeter" enabled="true">
       <stringProp name="TestPlan.comments"></stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
@@ -11,13 +11,13 @@
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Grupo de Hilos" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="PutGetMessageOnQueue." enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Controlador Bucle" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <intProp name="LoopController.loops">-1</intProp>
+          <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">10</stringProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <longProp name="ThreadGroup.start_time">1558832655000</longProp>
         <longProp name="ThreadGroup.end_time">1558832655000</longProp>
@@ -42,6 +42,16 @@
               <elementProp name="mq_queue_rsps" elementType="Argument">
                 <stringProp name="Argument.name">mq_queue_rsps</stringProp>
                 <stringProp name="Argument.value">QLOCAL01</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_correlate_rsps_msg" elementType="Argument">
+                <stringProp name="Argument.name">mq_correlate_rsps_msg</stringProp>
+                <stringProp name="Argument.value">messageId</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_wait_interval" elementType="Argument">
+                <stringProp name="Argument.name">mq_wait_interval</stringProp>
+                <stringProp name="Argument.value">3000</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="mq_hostname" elementType="Argument">
@@ -71,7 +81,7 @@
               </elementProp>
               <elementProp name="mq_encoding_message" elementType="Argument">
                 <stringProp name="Argument.name">mq_encoding_message</stringProp>
-                <stringProp name="Argument.value">Cp1047</stringProp>
+                <stringProp name="Argument.value">ASCII</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="mq_message" elementType="Argument">
@@ -85,7 +95,91 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Grupo de Hilos" enabled="false">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="PutMessageOnQueue" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Controlador Bucle" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <longProp name="ThreadGroup.start_time">1561088173000</longProp>
+        <longProp name="ThreadGroup.end_time">1561088173000</longProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Put message" enabled="true">
+          <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="mq_manager" elementType="Argument">
+                <stringProp name="Argument.name">mq_manager</stringProp>
+                <stringProp name="Argument.value">IOTMQ</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_queue_rqst" elementType="Argument">
+                <stringProp name="Argument.name">mq_queue_rqst</stringProp>
+                <stringProp name="Argument.value">QLOCAL01</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_queue_rsps" elementType="Argument">
+                <stringProp name="Argument.name">mq_queue_rsps</stringProp>
+                <stringProp name="Argument.value"></stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_correlate_rsps_msg" elementType="Argument">
+                <stringProp name="Argument.name">mq_correlate_rsps_msg</stringProp>
+                <stringProp name="Argument.value"></stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_wait_interval" elementType="Argument">
+                <stringProp name="Argument.name">mq_wait_interval</stringProp>
+                <stringProp name="Argument.value"></stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_hostname" elementType="Argument">
+                <stringProp name="Argument.name">mq_hostname</stringProp>
+                <stringProp name="Argument.value">127.0.0.1</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_port" elementType="Argument">
+                <stringProp name="Argument.name">mq_port</stringProp>
+                <stringProp name="Argument.value">1414</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_channel" elementType="Argument">
+                <stringProp name="Argument.name">mq_channel</stringProp>
+                <stringProp name="Argument.value">CLIENT.TO.IOTMQ</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_user_id" elementType="Argument">
+                <stringProp name="Argument.name">mq_user_id</stringProp>
+                <stringProp name="Argument.value">JoseSR</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_user_password" elementType="Argument">
+                <stringProp name="Argument.name">mq_user_password</stringProp>
+                <stringProp name="Argument.value"></stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_encoding_message" elementType="Argument">
+                <stringProp name="Argument.name">mq_encoding_message</stringProp>
+                <stringProp name="Argument.value">ASCII</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_message" elementType="Argument">
+                <stringProp name="Argument.name">mq_message</stringProp>
+                <stringProp name="Argument.value">Hello MQ</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="classname">co.signal.mqmeter.MQClientSampler</stringProp>
+        </JavaSampler>
+        <hashTree/>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="PublishMessageOnTopic" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Controlador Bucle" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
