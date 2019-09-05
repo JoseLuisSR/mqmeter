@@ -93,11 +93,6 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
     private MQQueueManager mqMgr;
 
     /**
-     * MQTopic variable.
-     */
-    private MQTopic publisher;
-
-    /**
      * Properties variable.
      */
     private Hashtable properties;
@@ -134,33 +129,35 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         properties.put(MQConstants.PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
         properties.put(MQConstants.CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
         properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
-        String userID = context.getParameter(PARAMETER_MQ_USER_ID);
 
+        String userID = context.getParameter(PARAMETER_MQ_USER_ID);
         if( userID != null && !userID.isEmpty())
             properties.put(MQConstants.USER_ID_PROPERTY, userID);
+
         String password = context.getParameter(PARAMETER_MQ_USER_PASSWORD);
         if( password != null && !password.isEmpty() )
             properties.put(MQConstants.PASSWORD_PROPERTY, password);
 
         log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
                 properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY));
+
+        //Connecting to MQ Manager.
+        String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
+        log.info("Connecting to queue manager " + mq_Manager);
+        try{
+            mqMgr = new MQQueueManager(mq_Manager, properties);
+        }catch (MQException e){
+            log.info("setupTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
+        }
     }
 
     @Override
     public void teardownTest(JavaSamplerContext context) {
-
         try {
-            if(publisher != null && publisher.isOpen()) {
-                log.info("Close the topic");
-                publisher.close();
-                log.info("Done!");
-            }
-            if(mqMgr != null && mqMgr.isConnected()) {
-                log.info("Disconnect MQ Manager");
-                mqMgr.disconnect();
-                log.info("Done!");
-            }
-        }catch (Exception e){
+            log.info("Disconnecting from the Queue Manager");
+            mqMgr.disconnect();
+            log.info("Done!");
+        } catch (MQException e) {
             log.info("teardownTest " + e.getCause());
         }
     }
@@ -170,16 +167,14 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         SampleResult result = newSampleResult();
         String encodingMessage = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
         String message = context.getParameter(PARAMETER_MQ_MESSAGE);
-        String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
         String topicName = context.getParameter(PARAMETER_MQ_TOPIC);
+        MQTopic publisher = null;
         String response = null;
         MQMessage mqMessage = new MQMessage();
+
         sampleResultStart(result, message);
 
         try{
-            //Connect to MQ Manager.
-            log.info("Connecting to MQ Manager: " + mq_Manager);
-            mqMgr = new MQQueueManager(mq_Manager, properties);
             //Access topic.
             log.info("Access topic: " + topicName);
             publisher = mqMgr.accessTopic(null,topicName, MQConstants.MQTOPIC_OPEN_AS_PUBLICATION, MQConstants.MQOO_OUTPUT);
@@ -195,6 +190,15 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         }catch (Exception e){
             sampleResultFail(result, "500", e);
             log.info("runTest " + e.getMessage());
+        }finally {
+            try{
+                log.info("Close the topic");
+                publisher.close();
+                log.info("Done!");
+            }catch (MQException e){
+                sampleResultFail(result, "500", e);
+                log.info("runTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
+            }
         }
 
         return result;
