@@ -161,17 +161,26 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         properties.put(MQConstants.PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
         properties.put(MQConstants.CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
         properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
-        String userID = context.getParameter(PARAMETER_MQ_USER_ID);
 
+        String userID = context.getParameter(PARAMETER_MQ_USER_ID);
         if( userID != null && !userID.isEmpty())
             properties.put(MQConstants.USER_ID_PROPERTY, userID);
-        String password = context.getParameter(PARAMETER_MQ_USER_PASSWORD);
 
+        String password = context.getParameter(PARAMETER_MQ_USER_PASSWORD);
         if( password != null && !password.isEmpty() )
             properties.put(MQConstants.PASSWORD_PROPERTY, password);
 
         log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
                 properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY));
+
+        //Connecting to MQ Manager.
+        String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
+        log.info("Connecting to queue manager " + mq_Manager);
+        try{
+            mqMgr = new MQQueueManager(mq_Manager, properties);
+        }catch (MQException e){
+            log.info("setupTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
+        }
     }
 
     /**
@@ -180,14 +189,12 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      */
     @Override
     public void teardownTest(JavaSamplerContext context) {
-        if( mqMgr != null && mqMgr.isConnected() ) {
-            try {
-                log.info("Disconnecting from the Queue Manager");
-                mqMgr.disconnect();
-                log.info("Done!");
-            } catch (MQException e) {
-                log.info("teardownTest " + e.getCause());
-            }
+        try {
+            log.info("Disconnecting from the Queue Manager");
+            mqMgr.disconnect();
+            log.info("Done!");
+        } catch (MQException e) {
+            log.info("teardownTest " + e.getCause());
         }
     }
 
@@ -202,15 +209,11 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
 
         SampleResult result = newSampleResult();
         String message = context.getParameter(PARAMETER_MQ_MESSAGE);
-        String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
         String response;
         byte[] messageId;
         sampleResultStart(result, message);
 
         try{
-            //Connecting to MQ Manager.
-            log.info("Connecting to queue manager " + mq_Manager);
-            mqMgr = new MQQueueManager(mq_Manager, properties);
             //Put message on queue.
             messageId= putMQMessage(context, message);
             //Get message on queue.
