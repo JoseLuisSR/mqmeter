@@ -23,9 +23,9 @@ After installing `mqmeter`, you can choose two kind of Java Sampler, these are:
 Use it to put and get message (optional) on MQ queue. On JMeter add a Java Request Sampler and select the `MQClientSampler` class name. The following parameter are necessary.
 
 * **mq_manager**: MQ Manager name. You can find it through IBM WebSphere MQ Explore or console.
-* **mq_queue_rqst**: MQ Queue request name to put message. Could be Local or Remote queue.
-* **mq_queue_rsps**: MQ Queue response name to get message. Could be Local or Remote queue. Leave it empty if you don't want get response message.
-* **mq_correlate_rsps_msg**: Correlate the response message with request message to get the right message from response queue. Put 'messageId' or 'correlationId' values. Leave it empty if you don't want get response message.
+* **mq_queue_put**: MQ Queue name to put message. Could be Local or Remote queue.
+* **mq_queue_get**: MQ Queue name to get message. Could be Local or Remote queue. Leave it empty if you don't want get response message.
+* **mq_correlate_msg**: Correlate the response message with request message to get the right message from the queue. Put 'messageId' or 'correlationId' values. Leave it empty if you don't want get response message.
 * **mq_wait_interval**: Set wait interval that the get message call waits for a suitable message to arrive. Similar to time-out to get response message on queue.
 * **mq_hostname**: Host name or ip address where MQ Server is running.
 * **mq_port**: Port number of the MQ Server listener.
