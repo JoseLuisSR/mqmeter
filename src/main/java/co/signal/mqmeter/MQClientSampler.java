@@ -32,7 +32,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Hashtable;
 
 /**
- * This class is to publish message on WebSphere MQ topic.
+ * This class is to put and get message on WebSphere MQ queue.
  * @author JoseLuisSR
  * @since 01/13/2019
  * @see "https://github.com/JoseLuisSR/mqmeter"
@@ -49,17 +49,17 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     /**
      * Parameter for setting MQ QUEUE to put message, could be LOCAL or REMOTE.
      */
-    private static final String PARAMETER_MQ_QUEUE_RQST = "mq_queue_rqst";
+    private static final String PARAMETER_MQ_QUEUE_PUT = "mq_queue_put";
 
     /**
-     * Parameter for setting MQ QUEUE for get response message, could be LOCAL or REMOTE.
+     * Parameter for setting MQ QUEUE for get message, could be LOCAL or REMOTE.
      */
-    private static final String PARAMETER_MQ_QUEUE_RSPS = "mq_queue_rsps";
+    private static final String PARAMETER_MQ_QUEUE_GET = "mq_queue_get";
 
     /**
      * Parameter for setting correlate response message with request message.
      */
-    private static final String PARAMETER_MQ_CORRELATE_RSPS_MSG = "mq_correlate_rsps_msg";
+    private static final String PARAMETER_MQ_CORRELATE_MSG = "mq_correlate_msg";
 
     /**
      * Constant to correlate response message with messageID.
@@ -117,9 +117,24 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private static final String ENCODING = "UTF-8";
 
     /**
-     * MQTopic variable.
+     * MQQueueManager variable.
      */
     private MQQueueManager mqMgr;
+
+    /**
+     * MQQueue request variable.
+     */
+    private MQQueue mqQueuePut;
+
+    /**
+     * MQQueue response variable.
+     */
+    private MQQueue mqQueueGet;
+
+    /**
+     *
+     */
+    private String encodingMessage;
 
     /**
      * Properties variable.
@@ -134,9 +149,9 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     public Arguments getDefaultParameters() {
         Arguments defaultParameter = new Arguments();
         defaultParameter.addArgument(PARAMETER_MQ_MANAGER, "${MQ_MANAGER}");
-        defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RQST, "${MQ_QUEUE_RQST}");
-        defaultParameter.addArgument(PARAMETER_MQ_QUEUE_RSPS, "");
-        defaultParameter.addArgument(PARAMETER_MQ_CORRELATE_RSPS_MSG, "");
+        defaultParameter.addArgument(PARAMETER_MQ_QUEUE_PUT, "${MQ_QUEUE_PUT}");
+        defaultParameter.addArgument(PARAMETER_MQ_QUEUE_GET, "");
+        defaultParameter.addArgument(PARAMETER_MQ_CORRELATE_MSG, "");
         defaultParameter.addArgument(PARAMETER_MQ_WAIT_INTERVAL, "");
         defaultParameter.addArgument(PARAMETER_MQ_HOSTNAME, "${MQ_HOSTNAME}");
         defaultParameter.addArgument(PARAMETER_MQ_PORT, "${MQ_PORT}");
@@ -170,6 +185,8 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         if( password != null && !password.isEmpty() )
             properties.put(MQConstants.PASSWORD_PROPERTY, password);
 
+        encodingMessage = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
+
         log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
                 properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY));
 
@@ -181,6 +198,27 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         }catch (MQException e){
             log.info("setupTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
         }
+
+        //Open mq queue to put message.
+        String queuePutName = context.getParameter(PARAMETER_MQ_QUEUE_PUT);
+        log.info("Accessing queue: " + queuePutName + " to put message.");
+        try{
+            mqQueuePut = mqMgr.accessQueue(queuePutName, MQConstants.MQOO_OUTPUT);
+        }catch (MQException e){
+            log.info("setupTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
+        }
+
+        //Open mq queue to get message
+        String queueGetName = context.getParameter(PARAMETER_MQ_QUEUE_GET);
+        if( queueGetName!= null && !queueGetName.isEmpty()){
+            log.info("Accessing queue: " + queueGetName + " to get message.");
+            try{
+                mqQueueGet = mqMgr.accessQueue(queueGetName, MQConstants.MQOO_INPUT_AS_Q_DEF);
+            }catch (MQException e){
+                log.info("setupTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
+            }
+        }
+
     }
 
     /**
@@ -190,9 +228,21 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     @Override
     public void teardownTest(JavaSamplerContext context) {
         try {
-            log.info("Disconnecting from the Queue Manager");
-            mqMgr.disconnect();
-            log.info("Done!");
+            if( mqQueuePut != null && mqQueuePut.isOpen() ) {
+                log.info("Closing queue " + mqQueuePut.getName());
+                mqQueuePut.close();
+                log.info("Done!");
+            }
+            if( mqQueueGet != null && mqQueueGet.isOpen() ) {
+                log.info("Closing queue " + mqQueueGet.getName());
+                mqQueueGet.close();
+                log.info("Done!");
+            }
+            if( mqMgr != null && mqMgr.isConnected() ) {
+                log.info("Disconnecting from the Queue Manager");
+                mqMgr.disconnect();
+                log.info("Done!");
+            }
         } catch (MQException e) {
             log.info("teardownTest " + e.getCause());
         }
@@ -231,69 +281,54 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
 
 
     /**
-     * Method to open a mq queue, put message and close mq queue.
+     * Method to put message on IBM mq queue.
      * @param context to get the arguments values on Java Sampler.
      * @param message to put on mq queue.
      * @return messageId generate by MQ Manager.
      * @throws Exception
      */
     private byte[] putMQMessage(JavaSamplerContext context, String message) throws MQException, IOException {
-        String mq_Queue = context.getParameter(PARAMETER_MQ_QUEUE_RQST);
-        String encodingMsg = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
-        MQMessage mqMessage = new MQMessage();
-        MQQueue mqQueue;
 
-        log.info("Accessing queue: " + mq_Queue);
-        mqQueue = mqMgr.accessQueue(mq_Queue, MQConstants.MQOO_OUTPUT);
+        MQMessage mqMessage = new MQMessage();
         log.info("Sending a message...");
-        mqMessage.write(message.getBytes(encodingMsg));
-        mqQueue.put(mqMessage, new MQPutMessageOptions());
-        log.info("Closing the queue");
-        mqQueue.close();
+        mqMessage.write(message.getBytes(encodingMessage));
+        mqQueuePut.put(mqMessage, new MQPutMessageOptions());
         return mqMessage.messageId;
     }
 
     /**
-     * Method to open mq queue, get message and close mq queue.
+     * Method to get message from IBM mq queue.
      * @param context to get the arguments values on Java Sampler.
      * @param messageId to correlate response message with request message.
      * @return String, message on mq queue.
      * @throws Exception
      */
     private String getMQMessage(JavaSamplerContext context, byte[] messageId) throws MQException, UnsupportedEncodingException {
-        String mq_Queue = context.getParameter(PARAMETER_MQ_QUEUE_RSPS);
         MQGetMessageOptions mqGMO = new MQGetMessageOptions();
         String response = null;
 
-        if( mq_Queue != null && !mq_Queue.isEmpty()){
-            String encodingMsg = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
-            String correlateRspMssg = context.getParameter(PARAMETER_MQ_CORRELATE_RSPS_MSG);
+        if( mqQueueGet!= null && mqQueueGet.isOpen() ){
+            String correlateMsg = context.getParameter(PARAMETER_MQ_CORRELATE_MSG);
             MQMsg2 mqMsg2 = new MQMsg2();
-            MQQueue mqQueue;
-
-            log.info("Accessing queue: " + mq_Queue);
-            mqQueue = mqMgr.accessQueue(mq_Queue, MQConstants.MQOO_INPUT_AS_Q_DEF);
 
             // Set message id from request message to get response message
-            if(correlateRspMssg == null || correlateRspMssg.isEmpty())
+            if(correlateMsg == null || correlateMsg.isEmpty())
                 mqMsg2.setMessageId(messageId);
-            else if(correlateRspMssg.equals(MESSAGE_ID))
+            else if(correlateMsg.equals(MESSAGE_ID))
                 mqMsg2.setMessageId(messageId);
-            else if(correlateRspMssg.equals(CORRELATION_ID))
+            else if(correlateMsg.equals(CORRELATION_ID))
                 mqMsg2.setCorrelationId(messageId);
 
             //Set wait Interval to get message on queue.
             String waitInterval = context.getParameter(PARAMETER_MQ_WAIT_INTERVAL);
-            if(waitInterval != null && !waitInterval.isEmpty() && StringUtils.isNumeric(waitInterval)) {
+            if( waitInterval != null && !waitInterval.isEmpty() && StringUtils.isNumeric(waitInterval) ) {
                 mqGMO.options = MQConstants.MQGMO_WAIT;
                 mqGMO.waitInterval = Integer.parseInt(waitInterval);
             }
 
             log.info("Getting a message...");
-            mqQueue.getMsg2(mqMsg2, mqGMO);
-            response = new String(mqMsg2.getMessageData(),encodingMsg);
-            log.info("Closing the queue");
-            mqQueue.close();
+            mqQueueGet.getMsg2(mqMsg2, mqGMO);
+            response = new String(mqMsg2.getMessageData(),encodingMessage);
         }
 
         return response;
