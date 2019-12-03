@@ -28,7 +28,7 @@ import java.io.StringWriter;
 import java.util.Hashtable;
 
 /**
- * This class is to put and get message on WebSphere MQ queue.
+ * This class is to publish message on WebSphere MQ topic.
  * @author JoseLuisSR
  * @since 01/13/2019
  * @see "https://github.com/JoseLuisSR/mqmeter"

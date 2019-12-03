@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.1.1 r1855137">
+<jmeterTestPlan version="1.2" properties="3.2" jmeter="3.3 r1808647">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="mqmeter" enabled="true">
       <stringProp name="TestPlan.comments"></stringProp>
@@ -34,18 +34,18 @@
                 <stringProp name="Argument.value">IOTMQ</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="mq_queue_rqst" elementType="Argument">
-                <stringProp name="Argument.name">mq_queue_rqst</stringProp>
+              <elementProp name="mq_queue_put" elementType="Argument">
+                <stringProp name="Argument.name">mq_queue_put</stringProp>
                 <stringProp name="Argument.value">QLOCAL01</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="mq_queue_rsps" elementType="Argument">
-                <stringProp name="Argument.name">mq_queue_rsps</stringProp>
+              <elementProp name="mq_queue_get" elementType="Argument">
+                <stringProp name="Argument.name">mq_queue_get</stringProp>
                 <stringProp name="Argument.value">QLOCAL01</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="mq_correlate_rsps_msg" elementType="Argument">
-                <stringProp name="Argument.name">mq_correlate_rsps_msg</stringProp>
+              <elementProp name="mq_correlate_msg" elementType="Argument">
+                <stringProp name="Argument.name">mq_correlate_msg</stringProp>
                 <stringProp name="Argument.value">messageId</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
@@ -118,18 +118,18 @@
                 <stringProp name="Argument.value">IOTMQ</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="mq_queue_rqst" elementType="Argument">
-                <stringProp name="Argument.name">mq_queue_rqst</stringProp>
+              <elementProp name="mq_queue_put" elementType="Argument">
+                <stringProp name="Argument.name">mq_queue_put</stringProp>
                 <stringProp name="Argument.value">QLOCAL01</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="mq_queue_rsps" elementType="Argument">
-                <stringProp name="Argument.name">mq_queue_rsps</stringProp>
+              <elementProp name="mq_queue_get" elementType="Argument">
+                <stringProp name="Argument.name">mq_queue_get</stringProp>
                 <stringProp name="Argument.value"></stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="mq_correlate_rsps_msg" elementType="Argument">
-                <stringProp name="Argument.name">mq_correlate_rsps_msg</stringProp>
+              <elementProp name="mq_correlate_msg" elementType="Argument">
+                <stringProp name="Argument.name">mq_correlate_msg</stringProp>
                 <stringProp name="Argument.value"></stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
@@ -393,5 +393,9 @@
       </ResultCollector>
       <hashTree/>
     </hashTree>
+    <WorkBench guiclass="WorkBenchGui" testclass="WorkBench" testname="Banco de Trabajo" enabled="true">
+      <boolProp name="WorkBench.save">true</boolProp>
+    </WorkBench>
+    <hashTree/>
   </hashTree>
 </jmeterTestPlan>
