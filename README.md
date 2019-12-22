@@ -14,6 +14,10 @@ Install the extension `mqmeter-x.y.z.jar` into
 
     `$JMETER_HOME/lib/ext`.
 
+Also you can install it through [JMeter Plugins](http://jmeter.apache.org/), search "IBM MQ Support".
+
+![Screenshot](https://github.com/JoseLuisSR/mqmeter/blob/develop/doc/img/jmete-plugins-mqmeter.png?raw=true)
+
 ## Usage
 
 After installing `mqmeter`, you can choose two kind of Java Sampler, these are:
@@ -35,7 +39,13 @@ Use it to put and get message (optional) on MQ queue. On JMeter add a Java Reque
 * **mq_encoding_message**: Character encoding standard for your message: For EBCDIC put Cp1047. ASCII just put ASCII.
 * **mq_message**: The content of the message that you want.
 
-![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQClientSampler.png)
+#### Put & Get Message on Queue
+
+![Screenshot](https://github.com/JoseLuisSR/mqmeter/blob/develop/doc/img/PutGetMessageOnQueue.png?raw=true)
+
+#### Put Message on Queue
+
+![Screenshot](https://github.com/JoseLuisSR/mqmeter/blob/develop/doc/img/PutMessageOnQueue.png?raw=true)
 
 ### MQPublishSampler
 
@@ -52,7 +62,7 @@ On JMeter add a Java Request Sampler and select the `MQPublishSampler` class nam
 * **mq_encoding_message**: Character encoding standard for your message: For EBCDIC put Cp1047. ASCII just put ASCII.
 * **mq_message**: The content of the message that you want.
 
-![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQPublishSampler.png)
+![Screenshot](https://github.com/JoseLuisSR/mqmeter/blob/develop/doc/img/PublishMessageOnTopic.png?raw=true)
 
 ## IBM WebSphere MQ
 
@@ -60,22 +70,22 @@ The below images show where find the values for some of the above properties
 
 * **MQ Manager**
 
-![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQManager.png)
+![Screenshot](https://github.com/JoseLuisSR/mqmeter/blob/develop/doc/img/MQManager.png?raw=true)
 
 * **MQ Server channel**
 
-![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQServerChanel.png)
+![Screenshot](https://github.com/JoseLuisSR/mqmeter/blob/develop/doc/img/MQServerChanel.png?raw=true)
 
 * **MQ Server listener**
 
-![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQServerListener.png)
+![Screenshot](https://github.com/JoseLuisSR/mqmeter/blob/develop/doc/img/MQServerListener.png?raw=true)
 
 * **MQ Chlauth**
 
 You can find the steps to add users access to MQ Manager through Channel Authentication (CHLAUTH) with this tutorial
 [IBM CHLAUTH](http://www-01.ibm.com/support/docview.wss?uid=swg27041997&aid=1)
 
-![Screenshot](https://github.com/JoseLuisSR/img2/blob/master/mqmeter/MQChlauth.png)
+![Screenshot](https://github.com/JoseLuisSR/mqmeter/blob/develop/doc/img/MQChlauth.png?raw=true)
 
 ## Troubleshooting
 
