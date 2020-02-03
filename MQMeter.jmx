@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jmeterTestPlan version="1.2" properties="3.2" jmeter="3.3 r1808647">
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.1.1 r1855137">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="mqmeter" enabled="true">
       <stringProp name="TestPlan.comments"></stringProp>
@@ -77,6 +77,11 @@
               <elementProp name="mq_user_password" elementType="Argument">
                 <stringProp name="Argument.name">mq_user_password</stringProp>
                 <stringProp name="Argument.value"></stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_message_type" elementType="Argument">
+                <stringProp name="Argument.name">mq_message_type</stringProp>
+                <stringProp name="Argument.value">Byte</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="mq_encoding_message" elementType="Argument">
@@ -161,6 +166,11 @@
               <elementProp name="mq_user_password" elementType="Argument">
                 <stringProp name="Argument.name">mq_user_password</stringProp>
                 <stringProp name="Argument.value"></stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="mq_message_type" elementType="Argument">
+                <stringProp name="Argument.name">mq_message_type</stringProp>
+                <stringProp name="Argument.value">Byte</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="mq_encoding_message" elementType="Argument">
@@ -393,9 +403,5 @@
       </ResultCollector>
       <hashTree/>
     </hashTree>
-    <WorkBench guiclass="WorkBenchGui" testclass="WorkBench" testname="Banco de Trabajo" enabled="true">
-      <boolProp name="WorkBench.save">true</boolProp>
-    </WorkBench>
-    <hashTree/>
   </hashTree>
 </jmeterTestPlan>

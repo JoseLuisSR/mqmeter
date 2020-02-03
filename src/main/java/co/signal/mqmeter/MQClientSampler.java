@@ -107,6 +107,11 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private static final String PARAMETER_MQ_ENCODING_MESSAGE = "mq_encoding_message";
 
     /**
+     * Parameter for setting MQ Message type like byte, string, object.
+     */
+    private static final String PARAMETER_MQ_MESSAGE_TYPE = "mq_message_type";
+
+    /**
      * Parameter to set wait interval to get message on queue.
      */
     private static final String PARAMETER_MQ_WAIT_INTERVAL = "mq_wait_interval";
@@ -115,6 +120,16 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      * Parameter for encoding.
      */
     private static final String ENCODING = "UTF-8";
+
+    /**
+     * Default encoding message ASCII constant.
+     */
+    private static final String DEFAULT_MESSAGE_ENCODING = "ASCII";
+
+    /**
+     * Default message type constant.
+     */
+    private static final String DEFAULT_MESSAGE_TYPE = "Byte";
 
     /**
      * MQQueueManager variable.
@@ -132,9 +147,14 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private MQQueue mqQueueGet;
 
     /**
-     *
+     * Encoding message variable.
      */
     private String encodingMessage;
+
+    /**
+     * Message type variable
+     */
+    private String messageType;
 
     /**
      * Properties variable.
@@ -158,7 +178,8 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         defaultParameter.addArgument(PARAMETER_MQ_CHANNEL, "${MQ_CHANNEL}");
         defaultParameter.addArgument(PARAMETER_MQ_USER_ID, "");
         defaultParameter.addArgument(PARAMETER_MQ_USER_PASSWORD,"");
-        defaultParameter.addArgument(PARAMETER_MQ_ENCODING_MESSAGE, "${MQ_ENCODING_MESSAGE}");
+        defaultParameter.addArgument(PARAMETER_MQ_MESSAGE_TYPE, DEFAULT_MESSAGE_TYPE);
+        defaultParameter.addArgument(PARAMETER_MQ_ENCODING_MESSAGE, DEFAULT_MESSAGE_ENCODING);
         defaultParameter.addArgument(PARAMETER_MQ_MESSAGE, "${MQ_MESSAGE}");
         return defaultParameter;
     }
@@ -186,6 +207,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
             properties.put(MQConstants.PASSWORD_PROPERTY, password);
 
         encodingMessage = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
+        messageType = context.getParameter(PARAMETER_MQ_MESSAGE_TYPE);
 
         log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
                 properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY));
@@ -291,7 +313,17 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
 
         MQMessage mqMessage = new MQMessage();
         log.info("Sending a message...");
-        mqMessage.write(message.getBytes(encodingMessage));
+        switch (messageType){
+            case "Object":
+                mqMessage.writeObject(message);
+                break;
+            case "String":
+                mqMessage.writeString(message);
+                break;
+            default:
+                mqMessage.write(message.getBytes(encodingMessage));
+                break;
+        }
         mqQueuePut.put(mqMessage, new MQPutMessageOptions());
         return mqMessage.messageId;
     }
