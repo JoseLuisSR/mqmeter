@@ -92,6 +92,12 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private static final String PARAMETER_MQ_USER_PASSWORD = "mq_user_password";
 
     /**
+     * Parameter for using Compatibility mode or MQCSP authentication mode.
+     * https://www.ibm.com/support/knowledgecenter/SSFKSJ_9.1.0/com.ibm.mq.sec.doc/q118680_.htm
+     */
+    private static final String PARAMETER_MQ_USE_MQCSP_AUTHENTICATION = "mq_use_mqcsp_authentication";
+
+    /**
      * Parameter for setting MQ PORT, is the Listener port.
      */
     private static final String PARAMETER_MQ_PORT = "mq_port";
@@ -158,6 +164,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         defaultParameter.addArgument(PARAMETER_MQ_CHANNEL, "${MQ_CHANNEL}");
         defaultParameter.addArgument(PARAMETER_MQ_USER_ID, "");
         defaultParameter.addArgument(PARAMETER_MQ_USER_PASSWORD,"");
+        defaultParameter.addArgument(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION,"${MQ_USE_MQCSP_AUTHENTICATION}");
         defaultParameter.addArgument(PARAMETER_MQ_ENCODING_MESSAGE, "${MQ_ENCODING_MESSAGE}");
         defaultParameter.addArgument(PARAMETER_MQ_MESSAGE, "${MQ_MESSAGE}");
         return defaultParameter;
@@ -175,20 +182,33 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         properties.put(MQConstants.HOST_NAME_PROPERTY, context.getParameter(PARAMETER_MQ_HOSTNAME));
         properties.put(MQConstants.PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
         properties.put(MQConstants.CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
-        properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
+        //properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
+
+        /**
+         * Read the parameter mq_use_mqcsp_authentication from the script.
+         * If (String) true, set MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY (boolean) true.
+         * In all other cases, set false.
+         */
+        String mq_use_mqcsp_authentication = context.getParameter(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION);
+        if( mq_use_mqcsp_authentication.equals("true") )
+            properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
+        else properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, false);
 
         String userID = context.getParameter(PARAMETER_MQ_USER_ID);
         if( userID != null && !userID.isEmpty())
             properties.put(MQConstants.USER_ID_PROPERTY, userID);
 
         String password = context.getParameter(PARAMETER_MQ_USER_PASSWORD);
-        if( password != null && !password.isEmpty() )
+        if( password != null && !password.isEmpty())
             properties.put(MQConstants.PASSWORD_PROPERTY, password);
 
         encodingMessage = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
 
         log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
-                properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY));
+                properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY) + " user: " + properties.get(MQConstants.USER_ID_PROPERTY));
+
+//        log.info("Username is: " + properties.get(MQConstants.USER_ID_PROPERTY));
+//        log.info("Password is: " + properties.get(MQConstants.PASSWORD_PROPERTY));
 
         //Connecting to MQ Manager.
         String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
