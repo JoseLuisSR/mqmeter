@@ -118,6 +118,11 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private static final String PARAMETER_MQ_WAIT_INTERVAL = "mq_wait_interval";
 
     /**
+     * Parameter for setting MQ Message Format.
+     */
+    private static final String PARAMETER_MQ_MESSAGE_FORMAT = "mq_message_format";
+
+    /**
      * Parameter for encoding.
      */
     private static final String ENCODING = "UTF-8";
@@ -167,6 +172,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         defaultParameter.addArgument(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION,"${MQ_USE_MQCSP_AUTHENTICATION}");
         defaultParameter.addArgument(PARAMETER_MQ_ENCODING_MESSAGE, "${MQ_ENCODING_MESSAGE}");
         defaultParameter.addArgument(PARAMETER_MQ_MESSAGE, "${MQ_MESSAGE}");
+        defaultParameter.addArgument(PARAMETER_MQ_MESSAGE_FORMAT, "${MQ_MESSAGE_FORMAT}");
         return defaultParameter;
     }
 
@@ -310,6 +316,8 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private byte[] putMQMessage(JavaSamplerContext context, String message) throws MQException, IOException {
 
         MQMessage mqMessage = new MQMessage();
+        String messageFormat = context.getParameter(PARAMETER_MQ_MESSAGE_FORMAT);
+        if (!"${MQ_MESSAGE_FORMAT}".equals(messageFormat) && !"null".equals(messageFormat)) mqMessage.format = messageFormat;
         log.info("Sending a message...");
         mqMessage.write(message.getBytes(encodingMessage));
         mqQueuePut.put(mqMessage, new MQPutMessageOptions());
