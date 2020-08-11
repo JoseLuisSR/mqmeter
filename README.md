@@ -39,6 +39,9 @@ Use it to put and get message (optional) on MQ queue. On JMeter add a Java Reque
 * **mq_use_mqcsp_authentication**: The connection authentication used. Set false for Compatibility mode, or true for MQCSP authentication.
 * **mq_encoding_message**: Character encoding standard for your message: For EBCDIC put Cp1047. ASCII just put ASCII.
 * **mq_message**: The content of the message that you want.
+* **mq_message_format**: MQMD Message [Format](https://www.ibm.com/support/knowledgecenter/SSFKSJ_7.5.0/com.ibm.mq.ref.dev.doc/q097520_.htm).
+ You can set one of the values in constants [CMQC.MQFMT_*](https://www.ibm.com/support/knowledgecenter/SSFKSJ_7.5.0/com.ibm.mq.javadoc.doc/WMQJavaClasses/constant-values.html#com.ibm.mq.constants.CMQC.MQFMT_STRING).
+ For example, the value of constant `CMQC.MQFMT_STRING` - `MQSTR `.  
 
 #### Put & Get Message on Queue
 
