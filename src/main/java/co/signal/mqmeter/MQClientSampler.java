@@ -15,6 +15,15 @@
  */
 package co.signal.mqmeter;
 
+import static com.ibm.mq.constants.CMQC.CHANNEL_PROPERTY;
+import static com.ibm.mq.constants.CMQC.HOST_NAME_PROPERTY;
+import static com.ibm.mq.constants.CMQC.MQGMO_WAIT;
+import static com.ibm.mq.constants.CMQC.PASSWORD_PROPERTY;
+import static com.ibm.mq.constants.CMQC.PORT_PROPERTY;
+import static com.ibm.mq.constants.CMQC.USER_ID_PROPERTY;
+import static com.ibm.mq.constants.CMQC.USE_MQCSP_AUTHENTICATION_PROPERTY;
+import static java.lang.String.*;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -44,6 +53,10 @@ import org.slf4j.Logger;
  * @see "https://github.com/JoseLuisSR/mqmeter"
  */
 public class MQClientSampler extends AbstractJavaSamplerClient {
+
+    public static final String SETUP_TEST_ERROR_MESSAGE = "setupTest %s %s";
+
+    public static final String CLOSING_QUEUE_MESSAGE = "Closing queue %s";
 
     private Logger log;
 
@@ -146,6 +159,8 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
 
     public static final String MQ_MESSAGE = "${MQ_MESSAGE}";
 
+    private static final String PARAMETER_MQ_HEADER = "mq_headers";
+
     /**
      * MQQueueManager variable.
      */
@@ -169,7 +184,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     /**
      * Properties variable.
      */
-    private Hashtable properties;
+    private Hashtable<String, Object> properties;
 
     /**
      * Initial values for test parameter. They are show in Java Request test sampler.
@@ -191,6 +206,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         defaultParameter.addArgument(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION, MQ_USE_MQCSP_AUTHENTICATION);
         defaultParameter.addArgument(PARAMETER_MQ_ENCODING_MESSAGE, MQ_ENCODING_MESSAGE);
         defaultParameter.addArgument(PARAMETER_MQ_MESSAGE, MQ_MESSAGE);
+        defaultParameter.addArgument(PARAMETER_MQ_HEADER, "${MQ_HEADER}");
         return defaultParameter;
     }
 
@@ -203,66 +219,68 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         log = getNewLogger();
 
         // SET MQ Manager properties to connection.
-        properties = new Hashtable<String, Object>();
-        properties.put(MQConstants.HOST_NAME_PROPERTY, context.getParameter(PARAMETER_MQ_HOSTNAME));
-        properties.put(MQConstants.PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
-        properties.put(MQConstants.CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
+        properties = new Hashtable<>();
+        properties.put(HOST_NAME_PROPERTY, context.getParameter(PARAMETER_MQ_HOSTNAME));
+        properties.put(PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
+        properties.put(CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
         //properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
 
         /**
-         * Read the parameter mq_use_mqcsp_authentication from the script.
+         * Read the parameter mqUseMqcspAuthentication from the script.
          * If (String) true, set MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY (boolean) true.
          * In all other cases, set false.
          */
-        String mq_use_mqcsp_authentication = context.getParameter(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION);
-        if( mq_use_mqcsp_authentication.equals("true") )
-            properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
-        else properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, false);
+        String mqUseMqcspAuthentication = context.getParameter(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION);
+
+        properties.put(USE_MQCSP_AUTHENTICATION_PROPERTY, mqUseMqcspAuthentication.equals("true"));
 
         String userID = context.getParameter(PARAMETER_MQ_USER_ID);
-        if( userID != null && !userID.isEmpty())
-            properties.put(MQConstants.USER_ID_PROPERTY, userID);
+        if ( userID != null && !userID.isEmpty())
+            properties.put(USER_ID_PROPERTY, userID);
 
         String password = context.getParameter(PARAMETER_MQ_USER_PASSWORD);
-        if( password != null && !password.isEmpty())
-            properties.put(MQConstants.PASSWORD_PROPERTY, password);
+        if ( password != null && !password.isEmpty())
+            properties.put(PASSWORD_PROPERTY, password);
 
         encodingMessage = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
 
-        log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
-                properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY) + " user: " + properties.get(MQConstants.USER_ID_PROPERTY));
+        log.info(format("MQ Manager properties are hostname: %s  port: %s channel: %s  user: %s",
+            properties.get(HOST_NAME_PROPERTY),
+            properties.get(PORT_PROPERTY),
+            properties.get(CHANNEL_PROPERTY),
+            properties.get(USER_ID_PROPERTY)));
 
 //        log.info("Username is: " + properties.get(MQConstants.USER_ID_PROPERTY));
 //        log.info("Password is: " + properties.get(MQConstants.PASSWORD_PROPERTY));
 
         //Connecting to MQ Manager.
-        String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
-        log.info("Connecting to queue manager " + mq_Manager);
+        String mqManager = context.getParameter(PARAMETER_MQ_MANAGER);
+        log.info("Connecting to queue manager " + mqManager);
         try{
-            mqMgr = new MQQueueManager(mq_Manager, properties);
+            mqMgr = new MQQueueManager(mqManager, properties);
         }catch (MQException e){
-            log.info("setupTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
+            log.info(String.format(SETUP_TEST_ERROR_MESSAGE, e.getMessage(), MQConstants.lookupReasonCode(e.getReason())));
         }
 
         //Open mq queue to put message.
         String queuePutName = context.getParameter(PARAMETER_MQ_QUEUE_PUT);
         if (!MQ_QUEUE_PUT.equalsIgnoreCase(queuePutName) && !StringUtils.isBlank(queuePutName)) {
-            log.info("Accessing queue: " + queuePutName + " to put message.");
+            log.info(String.format("Accessing queue: %s to put message.", queuePutName));
             try {
                 mqQueuePut = mqMgr.accessQueue(queuePutName, MQConstants.MQOO_OUTPUT);
             } catch (MQException e) {
-                log.info("setupTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()));
+                log.info(String.format(SETUP_TEST_ERROR_MESSAGE, e.getMessage(), MQConstants.lookupReasonCode(e.getReason())));
             }
         }
 
         //Open mq queue to get message
         String queueGetName = context.getParameter(PARAMETER_MQ_QUEUE_GET);
         if(!StringUtils.isBlank(queueGetName)){
-            log.info("Accessing queue: " + queueGetName + " to get message.");
+            log.info(String.format("Accessing queue: %s to get message.", queueGetName));
             try{
                 mqQueueGet = mqMgr.accessQueue(queueGetName, MQConstants.MQOO_INPUT_AS_Q_DEF);
             }catch (MQException e){
-                log.info("setupTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
+                log.info(String.format(SETUP_TEST_ERROR_MESSAGE, e.getMessage(), MQConstants.lookupReasonCode(e.getReason())));
             }
         }
 
@@ -276,12 +294,12 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     public void teardownTest(JavaSamplerContext context) {
         try {
             if( mqQueuePut != null && mqQueuePut.isOpen() ) {
-                log.info("Closing queue " + mqQueuePut.getName());
+                log.info(String.format(CLOSING_QUEUE_MESSAGE, mqQueuePut.getName()));
                 mqQueuePut.close();
                 log.info("Done!");
             }
             if( mqQueueGet != null && mqQueueGet.isOpen() ) {
-                log.info("Closing queue " + mqQueueGet.getName());
+                log.info(String.format(CLOSING_QUEUE_MESSAGE, mqQueueGet.getName()));
                 mqQueueGet.close();
                 log.info("Done!");
             }
@@ -308,12 +326,22 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         String message = context.getParameter(PARAMETER_MQ_MESSAGE);
         String response = "";
         byte[] messageId = {};
-        sampleResultStart(result, message);
+        MQMessage mqMessage = new MQMessage();
+
+        String headers = context.getParameter(PARAMETER_MQ_HEADER);
 
         try{
+
+            mqMessage.write(message.getBytes(encodingMessage));
+            for(String header : headers.split(",")) {
+                String[] keyValue = header.split(":");
+                mqMessage.setStringProperty(keyValue[0], keyValue[1]);
+            }
+            sampleResultStart(result, mqMessage);
+
             if (Objects.nonNull(mqQueuePut)) {
                 //Put message on queue.
-                messageId = putMQMessage(context, message);
+                messageId = putMQMessage(context, mqMessage);
             }
             //Get message on queue.
             if (Objects.nonNull(mqQueueGet)) {
@@ -324,10 +352,10 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
             sampleResultSuccess(result, response);
         }catch (MQException e){
             sampleResultFail(result, "500", e);
-            log.info("runTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
+            log.info(String.format("runTest %s %s", e.getMessage(), MQConstants.lookupReasonCode(e.getReason())));
         } catch (Exception e) {
             sampleResultFail(result, "500", e);
-            log.info("runTest " + e.getMessage());
+            log.info(String.format("runTest %s", e.getMessage()));
         }
         return result;
     }
@@ -340,13 +368,11 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      * @return messageId generate by MQ Manager.
      * @throws Exception
      */
-    private byte[] putMQMessage(JavaSamplerContext context, String message) throws MQException, IOException {
+    private byte[] putMQMessage(JavaSamplerContext context, MQMessage message) throws MQException, IOException {
 
-        MQMessage mqMessage = new MQMessage();
         log.info("Sending a message...");
-        mqMessage.write(message.getBytes(encodingMessage));
-        mqQueuePut.put(mqMessage, new MQPutMessageOptions());
-        return mqMessage.messageId;
+        mqQueuePut.put(message, new MQPutMessageOptions());
+        return message.messageId;
     }
 
     /**
@@ -360,7 +386,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         MQGetMessageOptions mqGMO = new MQGetMessageOptions();
         String response = null;
 
-        if( mqQueueGet!= null && mqQueueGet.isOpen() ){
+        if (mqQueueGet!= null && mqQueueGet.isOpen() ){
             String correlateMsg = context.getParameter(PARAMETER_MQ_CORRELATE_MSG);
             MQMsg2 mqMsg2 = new MQMsg2();
 
@@ -375,15 +401,15 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
             }
             //Set wait Interval to get message on queue.
             String waitInterval = context.getParameter(PARAMETER_MQ_WAIT_INTERVAL);
-            if( waitInterval != null && !waitInterval.isEmpty() && StringUtils.isNumeric(waitInterval) ) {
-                mqGMO.options = MQConstants.MQGMO_WAIT;
+            if ( waitInterval != null && !waitInterval.isEmpty() && StringUtils.isNumeric(waitInterval) ) {
+                mqGMO.options = MQGMO_WAIT;
                 mqGMO.waitInterval = Integer.parseInt(waitInterval);
             }
 
             log.info("Getting a message...");
             try {
                 mqQueueGet.getMsg2(mqMsg2, mqGMO);
-                response = new String(mqMsg2.getMessageData(),encodingMessage);
+                response = new String(mqMsg2.getMessageData(), encodingMessage);
             } catch (MQException e) {
                 if (2033 != e.getReason()) {
                    throw e;
@@ -415,8 +441,8 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      * @param data
      *          the request to set as <code>samplerData</code>
      */
-    private void sampleResultStart(SampleResult result, String data){
-        result.setSamplerData(data);
+    private void sampleResultStart(SampleResult result, MQMessage data){
+        result.setSamplerData(data.toString());
         result.sampleStart();
     }
 
@@ -436,7 +462,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         result.sampleEnd();
         result.setSuccessful(true);
         result.setResponseCodeOK();
-        if(response != null)
+        if (response != null)
             result.setResponseData(response, ENCODING);
         else
             result.setResponseData("No response required", ENCODING);
