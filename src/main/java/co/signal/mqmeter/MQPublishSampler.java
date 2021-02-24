@@ -15,17 +15,23 @@
  */
 package co.signal.mqmeter;
 
-import com.ibm.mq.*;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Hashtable;
+
+import com.ibm.mq.MQException;
+import com.ibm.mq.MQMessage;
+import com.ibm.mq.MQPutMessageOptions;
+import com.ibm.mq.MQQueueManager;
+import com.ibm.mq.MQTopic;
 import com.ibm.mq.constants.MQConstants;
+
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Hashtable;
+
+import org.slf4j.Logger;
 
 /**
  * This class is to publish message on WebSphere MQ topic.
@@ -35,7 +41,7 @@ import java.util.Hashtable;
  */
 public class MQPublishSampler extends AbstractJavaSamplerClient {
 
-    private static final Logger log = LoggingManager.getLoggerForClass();
+    private Logger log;
 
     /**
      *  Parameter for setting the MQ Manager.
@@ -68,6 +74,12 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
     private static final String PARAMETER_MQ_USER_PASSWORD = "mq_user_password";
 
     /**
+     * Parameter for using Compatibility mode or MQCSP authentication mode.
+     * https://www.ibm.com/support/knowledgecenter/SSFKSJ_9.1.0/com.ibm.mq.sec.doc/q118680_.htm
+     */
+    private static final String PARAMETER_MQ_USE_MQCSP_AUTHENTICATION = "mq_use_mqcsp_authentication";
+
+    /**
      * Parameter for setting MQ PORT, is the Listener port.
      */
     private static final String PARAMETER_MQ_PORT = "mq_port";
@@ -87,6 +99,7 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
      */
     private static final String ENCODING = "UTF-8";
 
+    private static final String PARAMETER_MQ_HEADER = "mq_headers";
     /**
      * MQQueueManager variable.
      */
@@ -95,7 +108,7 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
     /**
      * Properties variable.
      */
-    private Hashtable properties;
+    private Hashtable<String, Object> properties;
 
     /**
      * Initial values for test parameter. They are show in Java Request test sampler.
@@ -111,8 +124,10 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         defaultParameter.addArgument(PARAMETER_MQ_CHANNEL, "${MQ_CHANNEL}");
         defaultParameter.addArgument(PARAMETER_MQ_USER_ID, "");
         defaultParameter.addArgument(PARAMETER_MQ_USER_PASSWORD, "");
+        defaultParameter.addArgument(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION,"${MQ_USE_MQCSP_AUTHENTICATION}");
         defaultParameter.addArgument(PARAMETER_MQ_ENCODING_MESSAGE, "${MQ_ENCODING_MESSAGE}");
         defaultParameter.addArgument(PARAMETER_MQ_MESSAGE, "${MQ_MESSAGE}");
+        defaultParameter.addArgument(PARAMETER_MQ_HEADER, "${MQ_HEADER}");
         return defaultParameter;
     }
 
@@ -122,13 +137,23 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
      */
     @Override
     public void setupTest(JavaSamplerContext context) {
-
+        log = this.getNewLogger();
         // SET MQ Manager properties to connection.
-        properties = new Hashtable<String, Object>();
+        properties = new Hashtable<>();
         properties.put(MQConstants.HOST_NAME_PROPERTY, context.getParameter(PARAMETER_MQ_HOSTNAME));
         properties.put(MQConstants.PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
         properties.put(MQConstants.CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
-        properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
+        //properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
+
+        /**
+         * Read the parameter mqUseMqcspAuthentication from the script.
+         * If (String) true, set MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY (boolean) true.
+         * In all other cases, set false.
+         */
+        String mqUseMqcspAuthentication = context.getParameter(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION);
+        if( mqUseMqcspAuthentication.equals("true") )
+            properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
+        else properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, false);
 
         String userID = context.getParameter(PARAMETER_MQ_USER_ID);
         if( userID != null && !userID.isEmpty())
@@ -140,6 +165,9 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
 
         log.info("MQ Manager properties are hostname: " + properties.get(MQConstants.HOST_NAME_PROPERTY) + " port: " +
                 properties.get(MQConstants.PORT_PROPERTY) + " channel: " + properties.get(MQConstants.CHANNEL_PROPERTY));
+
+//        log.info("Username is: " + properties.get(MQConstants.USER_ID_PROPERTY));
+        //       log.info("Password is: " + properties.get(MQConstants.PASSWORD_PROPERTY));
 
         //Connecting to MQ Manager.
         String mq_Manager = context.getParameter(PARAMETER_MQ_MANAGER);
@@ -168,8 +196,8 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         String encodingMessage = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
         String message = context.getParameter(PARAMETER_MQ_MESSAGE);
         String topicName = context.getParameter(PARAMETER_MQ_TOPIC);
+        String headers = context.getParameter(PARAMETER_MQ_HEADER);
         MQTopic publisher = null;
-        String response = null;
         MQMessage mqMessage = new MQMessage();
 
         sampleResultStart(result, message);
@@ -177,26 +205,32 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
         try{
             //Access topic.
             log.info("Access topic: " + topicName);
-            publisher = mqMgr.accessTopic(null,topicName, MQConstants.MQTOPIC_OPEN_AS_PUBLICATION, MQConstants.MQOO_OUTPUT);
+            publisher = mqMgr.accessTopic(topicName, null, MQConstants.MQTOPIC_OPEN_AS_PUBLICATION, MQConstants.MQOO_OUTPUT);
             //Publish message on topic.
             mqMessage.write(message.getBytes(encodingMessage));
+            for(String header : headers.split(",")) {
+                String[] keyValue = header.split(":");
+                mqMessage.setStringProperty(keyValue[0], keyValue[1]);
+            }
             log.info("Publishing..");
             publisher.put(mqMessage, new MQPutMessageOptions());
             log.info("Done!");
-            sampleResultSuccess(result, response);
+            sampleResultSuccess(result);
         }catch (MQException e){
-            sampleResultFail(result, "500", e);
+            sampleResultFail(result, e);
             log.info("runTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
         }catch (Exception e){
-            sampleResultFail(result, "500", e);
+            sampleResultFail(result, e);
             log.info("runTest " + e.getMessage());
         }finally {
             try{
                 log.info("Close the topic");
-                publisher.close();
+                if (publisher != null) {
+                    publisher.close();
+                }
                 log.info("Done!");
             }catch (MQException e){
-                sampleResultFail(result, "500", e);
+                sampleResultFail(result, e);
                 log.info("runTest " + e.getMessage() + " " + MQConstants.lookupReasonCode(e.getReason()) );
             }
         }
@@ -239,33 +273,25 @@ public class MQPublishSampler extends AbstractJavaSamplerClient {
      *
      * @param result
      *          sample result to change
-     * @param response
-     *          the successful result message, may be null.
      */
-    private void sampleResultSuccess(SampleResult result, String response){
+    private void sampleResultSuccess(SampleResult result){
         result.sampleEnd();
         result.setSuccessful(true);
         result.setResponseCodeOK();
-        if(response != null)
-            result.setResponseData(response, ENCODING);
-        else
-            result.setResponseData("No response required", ENCODING);
     }
 
     /**
      * Mark the sample result as <code>sampleEnd</code>,
      * <code>setSuccessful(false)</code> and the <code>setResponseCode</code> to
      * reason.
-     *
-     * @param result
+     *  @param result
      *          the sample result to change
-     * @param reason
-     *          the failure reason
+     *
      */
-    private void sampleResultFail(SampleResult result, String reason, Exception exception){
+    private void sampleResultFail(SampleResult result, Exception exception){
         result.sampleEnd();
         result.setSuccessful(false);
-        result.setResponseCode(reason);
+        result.setResponseCode("500");
         String responseMessage;
 
         responseMessage = "Exception: " + exception.getMessage();

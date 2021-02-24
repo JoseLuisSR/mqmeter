@@ -36,6 +36,7 @@ Use it to put and get message (optional) on MQ queue. On JMeter add a Java Reque
 * **mq_channel**: The Server channel name on MQ Server.
 * **mq_user_id**: The userID to connect to MQ server channel. Leave it empty if you don't need user id to connect to MQ.
 * **mq_user_password**: The user password to connect to MQ server channel. Leave it empty if you don't need user id and password to connect to MQ.
+* **mq_use_mqcsp_authentication**: The connection authentication used. Set false for Compatibility mode, or true for MQCSP authentication.
 * **mq_encoding_message**: Character encoding standard for your message: For EBCDIC put Cp1047. ASCII just put ASCII.
 * **mq_message**: The content of the message that you want.
 
