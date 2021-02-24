@@ -111,12 +111,6 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private static final String PARAMETER_MQ_USER_PASSWORD = "mq_user_password";
 
     /**
-     * Parameter for using Compatibility mode or MQCSP authentication mode.
-     * https://www.ibm.com/support/knowledgecenter/SSFKSJ_9.1.0/com.ibm.mq.sec.doc/q118680_.htm
-     */
-    private static final String PARAMETER_MQ_USE_MQCSP_AUTHENTICATION = "mq_use_mqcsp_authentication";
-
-    /**
      * Parameter for setting MQ PORT, is the Listener port.
      */
     private static final String PARAMETER_MQ_PORT = "mq_port";
@@ -132,6 +126,11 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private static final String PARAMETER_MQ_ENCODING_MESSAGE = "mq_encoding_message";
 
     /**
+     * Parameter for setting MQ Message type like byte, string, object.
+     */
+    private static final String PARAMETER_MQ_MESSAGE_TYPE = "mq_message_type";
+
+    /**
      * Parameter to set wait interval to get message on queue.
      */
     private static final String PARAMETER_MQ_WAIT_INTERVAL = "mq_wait_interval";
@@ -140,6 +139,16 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      * Parameter for encoding.
      */
     private static final String ENCODING = "UTF-8";
+
+    /**
+     * Default encoding message ASCII constant.
+     */
+    private static final String DEFAULT_MESSAGE_ENCODING = "ASCII";
+
+    /**
+     * Default message type constant.
+     */
+    private static final String DEFAULT_MESSAGE_TYPE = "Byte";
 
     public static final String MQ_MANAGER = "${MQ_MANAGER}";
 
@@ -177,9 +186,14 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
     private MQQueue mqQueueGet;
 
     /**
-     *
+     * Encoding message variable.
      */
     private String encodingMessage;
+
+    /**
+     * Message type variable
+     */
+    private String messageType;
 
     /**
      * Properties variable.
@@ -203,7 +217,7 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         defaultParameter.addArgument(PARAMETER_MQ_CHANNEL, MQ_CHANNEL);
         defaultParameter.addArgument(PARAMETER_MQ_USER_ID, EMPTY);
         defaultParameter.addArgument(PARAMETER_MQ_USER_PASSWORD, EMPTY);
-        defaultParameter.addArgument(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION, MQ_USE_MQCSP_AUTHENTICATION);
+        defaultParameter.addArgument(PARAMETER_MQ_MESSAGE_TYPE, DEFAULT_MESSAGE_TYPE);
         defaultParameter.addArgument(PARAMETER_MQ_ENCODING_MESSAGE, MQ_ENCODING_MESSAGE);
         defaultParameter.addArgument(PARAMETER_MQ_MESSAGE, MQ_MESSAGE);
         defaultParameter.addArgument(PARAMETER_MQ_HEADER, "${MQ_HEADER}");
@@ -223,14 +237,6 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
         properties.put(HOST_NAME_PROPERTY, context.getParameter(PARAMETER_MQ_HOSTNAME));
         properties.put(PORT_PROPERTY, Integer.parseInt(context.getParameter(PARAMETER_MQ_PORT)));
         properties.put(CHANNEL_PROPERTY, context.getParameter(PARAMETER_MQ_CHANNEL));
-        //properties.put(MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY, true);
-
-        /**
-         * Read the parameter mqUseMqcspAuthentication from the script.
-         * If (String) true, set MQConstants.USE_MQCSP_AUTHENTICATION_PROPERTY (boolean) true.
-         * In all other cases, set false.
-         */
-        String mqUseMqcspAuthentication = context.getParameter(PARAMETER_MQ_USE_MQCSP_AUTHENTICATION);
 
         properties.put(USE_MQCSP_AUTHENTICATION_PROPERTY, mqUseMqcspAuthentication.equals("true"));
 
@@ -243,15 +249,13 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
             properties.put(PASSWORD_PROPERTY, password);
 
         encodingMessage = context.getParameter(PARAMETER_MQ_ENCODING_MESSAGE);
+        messageType = context.getParameter(PARAMETER_MQ_MESSAGE_TYPE);
 
         log.info(format("MQ Manager properties are hostname: %s  port: %s channel: %s  user: %s",
             properties.get(HOST_NAME_PROPERTY),
             properties.get(PORT_PROPERTY),
             properties.get(CHANNEL_PROPERTY),
             properties.get(USER_ID_PROPERTY)));
-
-//        log.info("Username is: " + properties.get(MQConstants.USER_ID_PROPERTY));
-//        log.info("Password is: " + properties.get(MQConstants.PASSWORD_PROPERTY));
 
         //Connecting to MQ Manager.
         String mqManager = context.getParameter(PARAMETER_MQ_MANAGER);
@@ -368,11 +372,24 @@ public class MQClientSampler extends AbstractJavaSamplerClient {
      * @return messageId generate by MQ Manager.
      * @throws Exception
      */
-    private byte[] putMQMessage(JavaSamplerContext context, MQMessage message) throws MQException, IOException {
+    private byte[] putMQMessage(JavaSamplerContext context, String message) throws MQException, IOException {
+
+        MQMessage mqMessage = new MQMessage();
 
         log.info("Sending a message...");
-        mqQueuePut.put(message, new MQPutMessageOptions());
-        return message.messageId;
+        switch (messageType){
+            case "Object":
+                mqMessage.writeObject(message);
+                break;
+            case "String":
+                mqMessage.writeString(message);
+                break;
+            default:
+                mqMessage.write(message.getBytes(encodingMessage));
+                break;
+        }
+        mqQueuePut.put(mqMessage, new MQPutMessageOptions());
+        return mqMessage.messageId;
     }
 
     /**
